@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results & Compatibility — SmartComponentAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo">
+                <span class="logo-symbol">SC</span>
+                <span class="logo-text">SmartComponent<span class="logo-highlight">AI</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="btn btn-outline btn-small">New Search</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content results-container">
+        <!-- Project Summary Banner -->
+        <section class="summary-banner">
+            <div class="summary-header">
+                <span class="nav-tag" style="background-color: var(--color-teal-light); border: 1px solid var(--color-teal); color: var(--color-teal-dark);">System Evaluation</span>
+                <h1 class="summary-title">Recommendation & Compatibility Results</h1>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-label">Target Platform:</span>
+                    <span class="summary-val font-mono" id="active-platform" data-platform-id="{{ platform_id }}">{{ platform }}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Budget Limit:</span>
+                    <span class="summary-val font-mono">Rs. {{ "%.0f"|format(budget) }}</span>
+                </div>
+                <div class="summary-item full-width">
+                    <span class="summary-label">Project Requirements:</span>
+                    <p class="summary-text">"{{ project_description }}"</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Two Columns Layout: Recommendations & Compatibility -->
+        <div class="results-layout">
+            
+            <!-- Left Column: Recommended Components -->
+            <section class="results-col recommendations-col">
+                <div class="col-header">
+                    <h2 class="col-title">
+                        <span>Recommended Components</span>
+                        <span class="count-badge">{{ recommendations|length }}</span>
+                    </h2>
+                    <p class="col-subtitle">Ranked by TF-IDF functional match and non-overlapping sensor roles.</p>
+                </div>
+
+                <div class="recommendations-list">
+                    {% for rec in recommendations %}
+                    <div class="component-card" id="card-{{ rec.component_id }}">
+                        <div class="card-top-row">
+                            <div class="rank-and-name">
+                                <span class="rank-badge">#{{ "%02d"|format(loop.index) }}</span>
+                                <h3 class="card-name">{{ rec.name }}</h3>
+                            </div>
+                            <div class="match-badge-wrap">
+                                <span class="badge-match">{{ rec.match_percentage }}% Match</span>
+                            </div>
+                        </div>
+
+                        <div class="card-tags-row">
+                            <span class="tag-pill tag-category">{{ rec.category }}</span>
+                            {% if rec.functional_kind_label %}
+                            <span class="tag-pill tag-subcategory">{{ rec.functional_kind_label }}</span>
+                            {% endif %}
+                            <span class="tag-pill tag-voltage">{{ rec.operating_voltage }}</span>
+                            <span class="tag-pill tag-logic">Logic: {{ rec.logic_voltage }}</span>
+                            <span class="tag-pill tag-price">Rs. {{ rec.price_inr }}</span>
+                        </div>
+
+                        <p class="card-description">{{ rec.description }}</p>
+
+                        <div class="card-reason-box">
+                            <strong class="reason-label">Engineering Rationale:</strong>
+                            <span>{{ rec.recommended_because }}</span>
+                        </div>
+
+                        <div class="card-actions">
+                            <a href="{{ url_for('component_details', component_id=rec.component_id) }}" class="btn btn-secondary btn-small">
+                                Datasheet Specs
+                            </a>
+                            <button 
+                                type="button" 
+                                class="btn btn-toggle-setup btn-small {% if rec.component_id in setup_component_ids %}active{% endif %}"
+                                data-id="{{ rec.component_id }}"
+                                data-name="{{ rec.name }}"
+                                onclick="toggleSetupComponent('{{ rec.component_id }}', this)"
+                            >
+                                {% if rec.component_id in setup_component_ids %}
+                                In Setup
+                                {% else %}
+                                + Add to Setup
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- Right Column: Hardware Setup Compatibility -->
+            <section class="results-col compatibility-col">
+                <div class="col-header">
+                    <h2 class="col-title">
+                        <span>Hardware Compatibility Analysis</span>
+                    </h2>
+                    <p class="col-subtitle">Deterministic electrical rules and machine learning verification.</p>
+                </div>
+
+                <!-- Overall Status Banner -->
+                <div class="compatibility-hero-status status-{{ compatibility_report.overall_status }}" id="overall-status-box">
+                    <div class="status-indicator-badge">
+                        {% if compatibility_report.overall_status == 'compatible' %}OK
+                        {% elif compatibility_report.overall_status == 'warning' %}WARN
+                        {% else %}ERR
+                        {% endif %}
+                    </div>
+                    <div class="status-meta">
+                        <h3 class="status-heading" id="overall-status-text">
+                            {% if compatibility_report.overall_status == 'compatible' %}COMPATIBLE SETUP
+                            {% elif compatibility_report.overall_status == 'warning' %}COMPATIBILITY WARNING
+                            {% else %}INCOMPATIBLE HARDWARE SETUP
+                            {% endif %}
+                        </h3>
+                        <p class="status-subtext" id="overall-status-desc">
+                            {% if compatibility_report.overall_status == 'compatible' %}
+                            All components operate within safe voltage limits, supported communication protocols, and pin budgets.
+                            {% elif compatibility_report.overall_status == 'warning' %}
+                            Setup requires level shifting, redundant sensor pruning, or external power, but is achievable.
+                            {% else %}
+                            Fatal interface or electrical mismatch detected. Review detailed diagnostics below.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Resource Gauges (Pins & Power) -->
+                <div class="resource-gauges">
+                    <div class="gauge-card">
+                        <div class="gauge-top">
+                            <span class="gauge-label">GPIO Pin Budget</span>
+                            <span class="gauge-val font-mono" id="pin-gauge-val">{{ compatibility_report.pin_budget.used }} / {{ compatibility_report.pin_budget.available }} Pins ({{ compatibility_report.pin_budget.percentage }}%)</span>
+                        </div>
+                        <div class="progress-bar-track">
+                            <div 
+                                class="progress-bar-fill {% if compatibility_report.pin_budget.percentage > 85 %}progress-danger{% elif compatibility_report.pin_budget.percentage > 65 %}progress-warn{% endif %}" 
+                                id="pin-progress-bar" 
+                                style="width: {{ compatibility_report.pin_budget.percentage }}%;"
+                            ></div>
+                        </div>
+                    </div>
+
+                    <div class="gauge-card">
+                        <div class="gauge-top">
+                            <span class="gauge-label">Total Current Load</span>
+                            <span class="gauge-val font-mono" id="power-gauge-val">~{{ compatibility_report.power_budget.total_ma }} mA</span>
+                        </div>
+                        <p class="gauge-note" id="power-gauge-note">
+                            {% if compatibility_report.power_budget.exceeds_usb %}
+                            Exceeds 500mA standard USB supply. Use external 5V 2A power adapter.
+                            {% else %}
+                            Safe to power directly from standard 500mA USB port.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pairwise Checks List -->
+                <div class="pair-checks-container" id="pairwise-checks-list">
+                    <h3 class="pair-checks-heading">Pairwise Hardware Verification</h3>
+                    
+                    {% for pair in compatibility_report.pair_results %}
+                    <div class="pair-check-card pair-status-{{ pair.status }}">
+                        <div class="pair-card-header">
+                            <div class="pair-names">
+                                <span class="chip-mcu">{{ pair.component_a }}</span>
+                                <span class="chip-arrow">/</span>
+                                <span class="chip-peripheral">{{ pair.component_b }}</span>
+                            </div>
+                            <span class="badge-status-{{ pair.status }}">
+                                {% if pair.status == 'compatible' %}COMPATIBLE
+                                {% elif pair.status == 'warning' %}WARNING
+                                {% else %}INCOMPATIBLE
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Feature Checklist -->
+                        <div class="feature-checklist">
+                            <span class="check-item {% if pair.features.voltage %}item-ok{% else %}item-warn{% endif %}">
+                                {% if pair.features.voltage %}PASS{% else %}WARN{% endif %} Voltage
+                            </span>
+                            <span class="check-item {% if pair.features.logic %}item-ok{% else %}item-warn{% endif %}">
+                                {% if pair.features.logic %}PASS{% else %}WARN{% endif %} Logic Level
+                            </span>
+                            <span class="check-item {% if pair.features.interface %}item-ok{% else %}item-fail{% endif %}">
+                                {% if pair.features.interface %}PASS{% else %}FAIL{% endif %} Interface
+                            </span>
+                            <span class="check-item {% if pair.features.pins %}item-ok{% else %}item-fail{% endif %}">
+                                {% if pair.features.pins %}PASS{% else %}FAIL{% endif %} Pins
+                            </span>
+                            <span class="check-item {% if pair.features.current %}item-ok{% else %}item-warn{% endif %}">
+                                {% if pair.features.current %}PASS{% else %}WARN{% endif %} Current
+                            </span>
+                        </div>
+
+                        <!-- Explanation and Solution -->
+                        <div class="pair-details-body">
+                            <p class="pair-reason"><strong>Reason:</strong> {{ pair.reason }}</p>
+                            {% if pair.status != 'compatible' %}
+                            <div class="pair-solution-callout">
+                                <strong>Suggested Solution:</strong> {{ pair.solution }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="pair-footer">
+                            <span class="ml-confidence">Confidence: <strong>{{ pair.ml_compatible_probability }}%</strong></span>
+                            <span class="decision-source">{{ pair.decision_source }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>SmartComponentAI — Automated recommendation and hybrid hardware validation.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartComponentAI — Electronic Component Recommendation & Compatibility Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo">
+                <span class="logo-symbol">SC</span>
+                <span class="logo-text">SmartComponent<span class="logo-highlight">AI</span></span>
+            </a>
+            <div class="nav-links">
+                <span class="nav-tag">Embedded Systems Lab</span>
+                <a href="#quick-projects" class="nav-link">Sample Projects</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="main-content">
+        <section class="hero-section">
+            <div class="hero-badge">Embedded Systems Hardware Assistant</div>
+            <h1 class="hero-title">
+                Find the Right Components.
+                <span class="hero-title-accent">Verify Hardware Compatibility.</span>
+            </h1>
+            <p class="hero-subtitle">
+                Specify your hardware requirements in plain language. The recommendation engine selects matching sensors, displays, and drivers, while the verification engine checks voltage levels, protocols, and GPIO pin budgets.
+            </p>
+        </section>
+
+        <!-- Project Input Form -->
+        <section class="form-container-card">
+            <form action="{{ url_for('recommend') }}" method="POST" class="project-form" id="recommendation-form">
+                <div class="form-group">
+                    <label for="project_description" class="form-label">
+                        <span class="label-title">Project Description</span>
+                        <span class="label-hint">Describe what you want to build, including desired sensors, measurements, or display types.</span>
+                    </label>
+                    <textarea 
+                        id="project_description" 
+                        name="project_description" 
+                        rows="4" 
+                        class="form-textarea" 
+                        placeholder="e.g. I want to build a temperature and humidity monitoring system using ESP32 with an OLED display to show real-time weather readings."
+                        required
+                    >I want to build a temperature monitoring system using ESP32 with an OLED display.</textarea>
+                </div>
+
+                <div class="form-row-grid">
+                    <div class="form-group">
+                        <label for="platform" class="form-label">
+                            <span class="label-title">Target Microcontroller / Platform</span>
+                            <span class="label-hint">Select your core dev board</span>
+                        </label>
+                        <select id="platform" name="platform" class="form-select">
+                            <option value="ESP32" selected>ESP32 DevKit V1 (3.3V, WiFi & Bluetooth)</option>
+                            <option value="Arduino Uno">Arduino Uno R3 (5.0V, ATmega328P)</option>
+                            <option value="Raspberry Pi Pico">Raspberry Pi Pico (3.3V, RP2040 Dual Core)</option>
+                            <option value="Raspberry Pi 4">Raspberry Pi 4 (3.3V GPIO / Linux SBC)</option>
+                            <option value="STM32">STM32 Blue Pill (3.3V, ARM Cortex-M3)</option>
+                            <option value="Arduino Mega">Arduino Mega 2560 (5.0V, 54 GPIOs)</option>
+                            <option value="Arduino Nano">Arduino Nano (5.0V Compact)</option>
+                            <option value="ESP32-S3">ESP32-S3 DevKit (3.3V, Edge AI & BLE 5)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="budget" class="form-label">
+                            <span class="label-title">Maximum Budget (INR)</span>
+                            <span class="label-hint">Approximate component expenditure limit</span>
+                        </label>
+                        <div class="input-with-prefix">
+                            <span class="input-prefix">Rs.</span>
+                            <input 
+                                type="number" 
+                                id="budget" 
+                                name="budget" 
+                                class="form-input" 
+                                value="1200" 
+                                min="100" 
+                                max="10000" 
+                                step="50"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="existing_parts" class="form-label">
+                        <span class="label-title">Existing / Owned Components</span>
+                        <span class="label-hint">Comma-separated parts you already have (optional)</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="existing_parts" 
+                        name="existing_parts" 
+                        class="form-input" 
+                        placeholder="e.g. esp32, bme280"
+                        value="esp32"
+                    >
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large" id="submit-btn">
+                        <span class="btn-text">Find Components & Check Compatibility</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Quick Demo Templates -->
+        <section class="demo-section" id="quick-projects">
+            <h2 class="section-title">Quick Project Presets</h2>
+            <p class="section-subtitle">Select any project configuration below to populate the form automatically.</p>
+
+            <div class="preset-grid">
+                <div class="preset-card" onclick="fillPreset('I want to build an IoT temperature and climate monitoring system using ESP32 with an OLED display.', 'ESP32', 1000, 'esp32')">
+                    <div class="preset-header">
+                        <span class="preset-category-tag">CLIMATE</span>
+                        <span class="preset-tag">ESP32 | Rs. 1,000</span>
+                    </div>
+                    <h3 class="preset-title">IoT Weather Station</h3>
+                    <p class="preset-desc">ESP32 + BME280 + SSD1306 OLED for ambient climate telemetry.</p>
+                </div>
+
+                <div class="preset-card" onclick="fillPreset('I want to build an autonomous obstacle avoiding robot car with ultrasonic distance sensor, motor driver, and servo steering.', 'Arduino Uno', 1200, 'arduino_uno')">
+                    <div class="preset-header">
+                        <span class="preset-category-tag">ROBOTICS</span>
+                        <span class="preset-tag">Arduino Uno | Rs. 1,200</span>
+                    </div>
+                    <h3 class="preset-title">Obstacle Avoiding Robot</h3>
+                    <p class="preset-desc">Arduino Uno + HC-SR04 + L298N Motor Driver + SG90 Servo.</p>
+                </div>
+
+                <div class="preset-card" onclick="fillPreset('I want to build an automated smart plant watering and soil moisture irrigation system with a water pump relay.', 'ESP32', 800, 'esp32')">
+                    <div class="preset-header">
+                        <span class="preset-category-tag">IRRIGATION</span>
+                        <span class="preset-tag">ESP32 | Rs. 800</span>
+                    </div>
+                    <h3 class="preset-title">Smart Plant Watering</h3>
+                    <p class="preset-desc">ESP32 + Capacitive Soil Moisture Sensor + 3.3V Relay Module.</p>
+                </div>
+
+                <div class="preset-card" onclick="fillPreset('Building an RFID contactless security door lock system with 16x2 LCD display and buzzer alarm.', 'Arduino Uno', 950, 'arduino_uno')">
+                    <div class="preset-header">
+                        <span class="preset-category-tag">SECURITY</span>
+                        <span class="preset-tag">Arduino Uno | Rs. 950</span>
+                    </div>
+                    <h3 class="preset-title">RFID Smart Door Lock</h3>
+                    <p class="preset-desc">Arduino Uno + RC522 RFID + 16x2 I2C LCD + 5V Relay + Buzzer.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- System Architecture Highlights -->
+        <section class="info-section">
+            <h2 class="section-title">System Verification Architecture</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-step-num">01</span>
+                    <h3 class="feature-title">TF-IDF Component Matching</h3>
+                    <p class="feature-desc">Extracts functional requirements from natural language descriptions and matches optimal sensors and peripherals with non-redundant roles.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-step-num">02</span>
+                    <h3 class="feature-title">Deterministic Safety Rules</h3>
+                    <p class="feature-desc">Validates electrical logic levels, voltage rails, and current draws, overriding ML classifications when electrical safety violations are detected.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-step-num">03</span>
+                    <h3 class="feature-title">Actionable Hardware Guidance</h3>
+                    <p class="feature-desc">Provides precise schematic recommendations including voltage divider ratios, bidirectional level shifters, and power decoupling advice.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>SmartComponentAI — Embedded electronics design and hardware compatibility assistant.</p>
+            <p class="footer-sub">Verified component electrical specifications and interface pin constraints.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

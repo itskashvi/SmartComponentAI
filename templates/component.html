@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ comp.name }} — Component Datasheet & Guide</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo">
+                <span class="logo-symbol">SC</span>
+                <span class="logo-text">SmartComponent<span class="logo-highlight">AI</span></span>
+            </a>
+            <div class="nav-links">
+                <button onclick="window.history.back()" class="btn btn-outline btn-small">Back to Results</button>
+                <a href="/" class="btn btn-outline btn-small">New Project</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content component-detail-container">
+        <!-- Component Header -->
+        <section class="detail-header-card">
+            <div class="detail-title-group">
+                <div class="category-pill-group">
+                    <span class="tag-pill tag-category">{{ comp.category }}</span>
+                    <span class="tag-pill tag-subcategory">{{ comp.subcategory }}</span>
+                    <span class="tag-pill tag-price">Approx: Rs. {{ comp.price_inr }}</span>
+                </div>
+                <h1 class="detail-component-name">{{ comp.name }}</h1>
+                <p class="detail-description">{{ comp.description }}</p>
+            </div>
+        </section>
+
+        <!-- Technical Specifications Grid -->
+        <section class="detail-section">
+            <h2 class="section-title">Electrical & Hardware Specifications</h2>
+            
+            <div class="specs-grid">
+                <div class="spec-card">
+                    <span class="spec-indicator"></span>
+                    <span class="spec-label">Operating Voltage</span>
+                    <span class="spec-value">{{ comp.operating_voltage_min }}V – {{ comp.operating_voltage_max }}V</span>
+                    <span class="spec-hint">Supply rail (VCC / 3V3 / 5V)</span>
+                </div>
+
+                <div class="spec-card">
+                    <span class="spec-indicator"></span>
+                    <span class="spec-label">Logic Level Standard</span>
+                    <span class="spec-value">{{ comp.logic_voltage }}V Logic</span>
+                    <span class="spec-hint">IO pin voltage threshold</span>
+                </div>
+
+                <div class="spec-card">
+                    <span class="spec-indicator"></span>
+                    <span class="spec-label">Max Current Draw</span>
+                    <span class="spec-value">{{ comp.max_current_ma }} mA</span>
+                    <span class="spec-hint">Peak operating load</span>
+                </div>
+
+                <div class="spec-card">
+                    <span class="spec-indicator"></span>
+                    <span class="spec-label">Pins Required</span>
+                    <span class="spec-value">{{ comp.pins_required }} Pin{% if comp.pins_required != 1 %}s{% endif %}</span>
+                    <span class="spec-hint">GPIO / Bus allocation</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Communication Interfaces & Platforms -->
+        <section class="detail-section">
+            <div class="two-col-detail-grid">
+                <div class="detail-box">
+                    <h3 class="detail-box-title">Supported Interfaces</h3>
+                    <div class="pill-cloud">
+                        {% for intf in interfaces %}
+                        <span class="interface-badge">{{ intf }}</span>
+                        {% endfor %}
+                    </div>
+                    <p class="box-note">
+                        Connect to matching hardware pins on your microcontroller (e.g. SDA/SCL for I2C, MOSI/MISO/SCK for SPI).
+                    </p>
+                </div>
+
+                <div class="detail-box">
+                    <h3 class="detail-box-title">Compatible Platforms</h3>
+                    <div class="pill-cloud">
+                        {% for plat in platforms %}
+                        <span class="platform-badge">{{ plat }}</span>
+                        {% endfor %}
+                    </div>
+                    <p class="box-note">
+                        Verified by our compatibility database and community library ecosystems.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Educational Rationale -->
+        <section class="detail-section">
+            <div class="educational-callout">
+                <div class="callout-badge">TECHNICAL REFERENCE</div>
+                <h2 class="callout-title">Engineering Context for {{ comp.name }}</h2>
+                <p class="callout-text">{{ comp.recommended_because }}</p>
+
+                <h3 class="applications-heading">Common Embedded Applications</h3>
+                <ul class="applications-list">
+                    {% for app in applications %}
+                    <li>{{ app }}</li>
+                    {% endfor %}
+                </ul>
+
+                <div class="safety-tip-box">
+                    <strong>Electrical Safety & Interfacing Checklist:</strong>
+                    <ul>
+                        <li>Confirm your microcontroller IO voltage domain (3.3V for ESP32, RP2040, STM32 vs 5.0V for Arduino Uno).</li>
+                        <li>If this component outputs 5.0V logic to a 3.3V board, insert a <strong>bidirectional level shifter</strong> or a <strong>resistive voltage divider</strong> on signal lines.</li>
+                        <li>Ensure a common Ground (GND) reference is shared across all distinct power rails.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <div class="bottom-action-bar">
+            <button onclick="window.history.back()" class="btn btn-secondary">Back to Results</button>
+            <a href="/" class="btn btn-primary">Start Another Project</a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>SmartComponentAI — Embedded hardware specifications and circuit compatibility validation.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

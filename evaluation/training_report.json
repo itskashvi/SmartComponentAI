@@ -1,0 +1,66 @@
+{
+  "best_model": "Random Forest",
+  "models_evaluated": {
+    "Decision Tree": {
+      "validation_accuracy": 1.0,
+      "validation_f1": 1.0,
+      "test_accuracy": 1.0,
+      "test_precision": 1.0,
+      "test_recall": 1.0,
+      "test_f1": 1.0,
+      "confusion_matrix": [
+        [
+          263,
+          0
+        ],
+        [
+          0,
+          278
+        ]
+      ]
+    },
+    "Random Forest": {
+      "validation_accuracy": 1.0,
+      "validation_f1": 1.0,
+      "test_accuracy": 1.0,
+      "test_precision": 1.0,
+      "test_recall": 1.0,
+      "test_f1": 1.0,
+      "confusion_matrix": [
+        [
+          263,
+          0
+        ],
+        [
+          0,
+          278
+        ]
+      ]
+    },
+    "Gradient Boosting": {
+      "validation_accuracy": 1.0,
+      "validation_f1": 1.0,
+      "test_accuracy": 1.0,
+      "test_precision": 1.0,
+      "test_recall": 1.0,
+      "test_f1": 1.0,
+      "confusion_matrix": [
+        [
+          263,
+          0
+        ],
+        [
+          0,
+          278
+        ]
+      ]
+    }
+  },
+  "features": [
+    "voltage_compatible",
+    "current_compatible",
+    "logic_compatible",
+    "interface_compatible",
+    "pin_compatible"
+  ]
+}

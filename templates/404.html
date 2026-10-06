@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found — SmartComponentAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo">
+                <span class="logo-symbol">SC</span>
+                <span class="logo-text">SmartComponent<span class="logo-highlight">AI</span></span>
+            </a>
+        </div>
+    </header>
+    <main class="main-content" style="text-align: center; padding: 80px 20px;">
+        <h1 style="font-size: 3rem; color: var(--text-main); margin-bottom: 16px; font-weight: 800;">404</h1>
+        <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 32px;">{{ message or "The requested component or page was not found in the catalog." }}</p>
+        <a href="/" class="btn btn-primary">Return to Catalog Home</a>
+    </main>
+</body>
+</html>
