@@ -4,12 +4,121 @@ Flask web server for SmartComponentAI — Electronic Component Recommendation & 
 """
 
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+import re
+from flask import Flask, render_template, request, jsonify, redirect, url_for, Response
 import pandas as pd
 
 from models.recommendation import ComponentRecommender
 from models.compatibility import HybridCompatibilityEngine
 from models.taxonomy import get_functional_kind, get_functional_kind_label
+from models.wiring import generate_wiring_guide
+
+
+# ==============================================================================
+# Platform Detection: Maps user-facing platform strings to internal component_ids
+# ==============================================================================
+
+# Canonical mapping from known input variations to internal component_id
+PLATFORM_ALIAS_MAP = {
+    # ESP32 family
+    "esp32": "esp32",
+    "esp32devkit": "esp32",
+    "espwroom32": "esp32",
+    "esp32wroom": "esp32",
+    "esp32devkitv1": "esp32",
+    "esp32s3": "esp32_s3",
+    "esp32s3devkit": "esp32_s3",
+    "esp8266": "esp8266_nodemcu",
+    "nodemcu": "esp8266_nodemcu",
+    "nodemcuesp8266": "esp8266_nodemcu",
+    "esp8266nodemcu": "esp8266_nodemcu",
+    "esp01": "esp8266_nodemcu",
+    "esp32cam": "esp32_cam",
+    "esp32camera": "esp32_cam",
+    # Arduino family
+    "arduinouno": "arduino_uno",
+    "arduinounor3": "arduino_uno",
+    "uno": "arduino_uno",
+    "unor3": "arduino_uno",
+    "atmega328p": "arduino_uno",
+    "arduinonano": "arduino_nano",
+    "arduinonanov3": "arduino_nano",
+    "nano": "arduino_nano",
+    "nanov3": "arduino_nano",
+    "arduinomega": "arduino_mega",
+    "arduinomega2560": "arduino_mega",
+    "mega": "arduino_mega",
+    "mega2560": "arduino_mega",
+    # Raspberry Pi family
+    "raspberrypipico": "rpi_pico",
+    "rpipico": "rpi_pico",
+    "pico": "rpi_pico",
+    "rp2040": "rpi_pico",
+    "raspberrypipicow": "rpi_pico_w",
+    "rpipicow": "rpi_pico_w",
+    "picow": "rpi_pico_w",
+    "raspberrypi4": "raspberry_pi_4",
+    "rpi4": "raspberry_pi_4",
+    "raspberrypi4b": "raspberry_pi_4",
+    "raspberrypizero2w": "rpi_zero_2w",
+    "rpizero2w": "rpi_zero_2w",
+    "rpizero": "rpi_zero_2w",
+    # STM32
+    "stm32": "stm32_bluepill",
+    "stm32bluepill": "stm32_bluepill",
+    "bluepill": "stm32_bluepill",
+    "stm32f103": "stm32_bluepill",
+    "stm32f103c8t6": "stm32_bluepill",
+    # Others
+    "teensy40": "teensy_40",
+    "teensy": "teensy_40",
+    "microbitv2": "microbit_v2",
+    "microbit": "microbit_v2",
+    "bbcmicrobit": "microbit_v2",
+    "attiny85": "attiny85_digispark",
+    "digispark": "attiny85_digispark",
+    "xiaoesp32c3": "seeed_xiao_esp32c3",
+    "xiao": "seeed_xiao_esp32c3",
+    "seeedxiao": "seeed_xiao_esp32c3",
+}
+
+# All valid platform component_ids in the system
+VALID_PLATFORM_IDS = {
+    "esp32", "esp32_s3", "esp8266_nodemcu", "esp32_cam",
+    "arduino_uno", "arduino_nano", "arduino_mega",
+    "rpi_pico", "rpi_pico_w", "raspberry_pi_4", "rpi_zero_2w",
+    "stm32_bluepill",
+    "teensy_40", "microbit_v2", "attiny85_digispark", "seeed_xiao_esp32c3",
+}
+
+
+def normalize_platform_input(raw_input):
+    """
+    Normalizes a user-provided platform string to a canonical component_id.
+    Strips whitespace, hyphens, underscores, and converts to lowercase.
+    Returns the matched platform_id or None if no match is found.
+    """
+    if not raw_input:
+        return None
+    # Normalize: lowercase, strip all spaces/hyphens/underscores/colons/dots
+    norm = re.sub(r'[\s_\-\.:]+', '', raw_input.strip().lower())
+
+    # 1. Direct alias match
+    if norm in PLATFORM_ALIAS_MAP:
+        return PLATFORM_ALIAS_MAP[norm]
+
+    # 2. Check if it's already a valid platform_id (with underscores stripped)
+    for pid in VALID_PLATFORM_IDS:
+        pid_norm = pid.replace('_', '')
+        if norm == pid_norm:
+            return pid
+
+    # 3. Substring match: check if any alias is contained in the input
+    for alias, pid in sorted(PLATFORM_ALIAS_MAP.items(), key=lambda x: -len(x[0])):
+        if alias in norm:
+            return pid
+
+    return None
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "smartcomponentai-secret-key-2026"
@@ -106,12 +215,23 @@ def recommend():
     # 2. Run Compatibility Engine
     compat_engine = get_compatibility_engine()
 
-    # Determine platform ID
-    platform_id = "esp32"
-    for p in ["esp32", "arduino_uno", "rpi_pico", "raspberry_pi_4", "stm32_bluepill", "arduino_mega", "arduino_nano"]:
-        if p in platform.lower() or platform.lower() in p:
-            platform_id = p
-            break
+    # Determine platform ID using robust normalization
+    platform_id = normalize_platform_input(platform)
+    if not platform_id:
+        # Fallback: if no match found, default to esp32 but log warning
+        platform_id = "esp32"
+
+    # Filter existing parts: remove any MCU/SBC components from the peripheral list.
+    # The platform MCU is already selected via the platform dropdown — having another
+    # MCU (e.g. "esp32") in existing_parts creates a confusing MCU-vs-MCU compatibility
+    # check that doesn't apply to a real circuit setup.
+    if compat_engine.components_df is not None:
+        mcu_ids = set(
+            compat_engine.components_df[
+                compat_engine.components_df["category"].isin(["Microcontroller", "Single Board Computer"])
+            ]["component_id"].tolist()
+        )
+        existing_parts = [p for p in existing_parts if p not in mcu_ids]
 
     # Setup components: existing parts + top non-redundant recommended components
     # Strictly ensure that no two sensors/components of the same functional kind are in the setup!
@@ -185,11 +305,36 @@ def check_compatibility_api():
     component_ids = data.get("component_ids", [])
 
     compat_engine = get_compatibility_engine()
+
+    # Filter out MCU/SBC components from the peripheral list
+    if compat_engine.components_df is not None:
+        mcu_ids = set(
+            compat_engine.components_df[
+                compat_engine.components_df["category"].isin(["Microcontroller", "Single Board Computer"])
+            ]["component_id"].tolist()
+        )
+        component_ids = [c for c in component_ids if c not in mcu_ids]
+
     report = compat_engine.check_setup_compatibility(
         platform_id=platform_id,
         component_ids=component_ids
     )
     return jsonify(report)
+
+
+@app.route("/export-wiring", methods=["POST"])
+def export_wiring():
+    """Returns downloadable plain text wiring guide for reports and lab files."""
+    data = request.get_json() or {}
+    platform_id = data.get("platform_id", "esp32")
+    component_ids = data.get("component_ids", [])
+    compat_engine = get_compatibility_engine()
+    guide = generate_wiring_guide(platform_id, component_ids, compat_engine.components_df)
+    return Response(
+        guide["export_text"],
+        mimetype="text/plain",
+        headers={"Content-Disposition": f"attachment;filename=wiring_guide_{platform_id}.txt"}
+    )
 
 
 @app.route("/api/components")

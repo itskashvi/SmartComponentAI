@@ -62,14 +62,22 @@
                             <span class="label-hint">Select your core dev board</span>
                         </label>
                         <select id="platform" name="platform" class="form-select">
-                            <option value="ESP32" selected>ESP32 DevKit V1 (3.3V, WiFi & Bluetooth)</option>
-                            <option value="Arduino Uno">Arduino Uno R3 (5.0V, ATmega328P)</option>
-                            <option value="Raspberry Pi Pico">Raspberry Pi Pico (3.3V, RP2040 Dual Core)</option>
-                            <option value="Raspberry Pi 4">Raspberry Pi 4 (3.3V GPIO / Linux SBC)</option>
-                            <option value="STM32">STM32 Blue Pill (3.3V, ARM Cortex-M3)</option>
-                            <option value="Arduino Mega">Arduino Mega 2560 (5.0V, 54 GPIOs)</option>
-                            <option value="Arduino Nano">Arduino Nano (5.0V Compact)</option>
-                            <option value="ESP32-S3">ESP32-S3 DevKit (3.3V, Edge AI & BLE 5)</option>
+                            <option value="esp32" selected>ESP32 DevKit V1 (3.3V, WiFi & Bluetooth)</option>
+                            <option value="arduino_uno">Arduino Uno R3 (5.0V, ATmega328P)</option>
+                            <option value="arduino_nano">Arduino Nano V3 (5.0V Compact)</option>
+                            <option value="arduino_mega">Arduino Mega 2560 (5.0V, 54 GPIOs)</option>
+                            <option value="esp32_s3">ESP32-S3 DevKit (3.3V, Edge AI & BLE 5)</option>
+                            <option value="esp8266_nodemcu">NodeMCU ESP8266 (3.3V, WiFi)</option>
+                            <option value="rpi_pico">Raspberry Pi Pico (3.3V, RP2040 Dual Core)</option>
+                            <option value="rpi_pico_w">Raspberry Pi Pico W (3.3V, RP2040 + WiFi)</option>
+                            <option value="raspberry_pi_4">Raspberry Pi 4 (3.3V GPIO / Linux SBC)</option>
+                            <option value="stm32_bluepill">STM32 Blue Pill (3.3V, ARM Cortex-M3)</option>
+                            <option value="esp32_cam">ESP32-CAM (3.3V, WiFi + OV2640 Camera)</option>
+                            <option value="teensy_40">Teensy 4.0 (3.3V, 600MHz ARM Cortex-M7)</option>
+                            <option value="microbit_v2">BBC micro:bit v2 (3.3V, Education Board)</option>
+                            <option value="attiny85_digispark">Digispark ATtiny85 (5.0V, Ultra Compact)</option>
+                            <option value="seeed_xiao_esp32c3">XIAO ESP32-C3 (3.3V, RISC-V WiFi/BLE)</option>
+                            <option value="rpi_zero_2w">Raspberry Pi Zero 2 W (3.3V, Linux SBC)</option>
                         </select>
                     </div>
 
@@ -104,8 +112,8 @@
                         id="existing_parts" 
                         name="existing_parts" 
                         class="form-input" 
-                        placeholder="e.g. esp32, bme280"
-                        value="esp32"
+                        placeholder="e.g. bme280, ssd1306_oled"
+                        value=""
                     >
                 </div>
 
@@ -123,7 +131,7 @@
             <p class="section-subtitle">Select any project configuration below to populate the form automatically.</p>
 
             <div class="preset-grid">
-                <div class="preset-card" onclick="fillPreset('I want to build an IoT temperature and climate monitoring system using ESP32 with an OLED display.', 'ESP32', 1000, 'esp32')">
+                <div class="preset-card" onclick="fillPreset('I want to build an IoT temperature and climate monitoring system using ESP32 with an OLED display.', 'esp32', 1000, '')">
                     <div class="preset-header">
                         <span class="preset-category-tag">CLIMATE</span>
                         <span class="preset-tag">ESP32 | Rs. 1,000</span>
@@ -132,7 +140,7 @@
                     <p class="preset-desc">ESP32 + BME280 + SSD1306 OLED for ambient climate telemetry.</p>
                 </div>
 
-                <div class="preset-card" onclick="fillPreset('I want to build an autonomous obstacle avoiding robot car with ultrasonic distance sensor, motor driver, and servo steering.', 'Arduino Uno', 1200, 'arduino_uno')">
+                <div class="preset-card" onclick="fillPreset('I want to build an autonomous obstacle avoiding robot car with ultrasonic distance sensor, motor driver, and servo steering.', 'arduino_uno', 1200, '')">
                     <div class="preset-header">
                         <span class="preset-category-tag">ROBOTICS</span>
                         <span class="preset-tag">Arduino Uno | Rs. 1,200</span>
@@ -141,7 +149,7 @@
                     <p class="preset-desc">Arduino Uno + HC-SR04 + L298N Motor Driver + SG90 Servo.</p>
                 </div>
 
-                <div class="preset-card" onclick="fillPreset('I want to build an automated smart plant watering and soil moisture irrigation system with a water pump relay.', 'ESP32', 800, 'esp32')">
+                <div class="preset-card" onclick="fillPreset('I want to build an automated smart plant watering and soil moisture irrigation system with a water pump relay.', 'esp32', 800, '')">
                     <div class="preset-header">
                         <span class="preset-category-tag">IRRIGATION</span>
                         <span class="preset-tag">ESP32 | Rs. 800</span>
@@ -150,7 +158,7 @@
                     <p class="preset-desc">ESP32 + Capacitive Soil Moisture Sensor + 3.3V Relay Module.</p>
                 </div>
 
-                <div class="preset-card" onclick="fillPreset('Building an RFID contactless security door lock system with 16x2 LCD display and buzzer alarm.', 'Arduino Uno', 950, 'arduino_uno')">
+                <div class="preset-card" onclick="fillPreset('Building an RFID contactless security door lock system with 16x2 LCD display and buzzer alarm.', 'arduino_uno', 950, '')">
                     <div class="preset-header">
                         <span class="preset-category-tag">SECURITY</span>
                         <span class="preset-tag">Arduino Uno | Rs. 950</span>

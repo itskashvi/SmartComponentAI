@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 
 from models.taxonomy import get_functional_kind, get_functional_kind_label
+from models.wiring import generate_wiring_guide
 
 MODELS_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "processed")
@@ -345,6 +346,12 @@ class HybridCompatibilityEngine:
 
         overall_status = "incompatible" if has_incompatible else ("warning" if has_warning else "compatible")
 
+        wiring_guide = generate_wiring_guide(
+            platform_id=platform_id,
+            component_ids=component_ids,
+            components_df=self.components_df
+        )
+
         return {
             "overall_status": overall_status,
             "platform_name": platform["name"],
@@ -358,7 +365,8 @@ class HybridCompatibilityEngine:
             "power_budget": {
                 "total_ma": round(total_current_ma, 1),
                 "exceeds_usb": total_current_ma > 500.0
-            }
+            },
+            "wiring_guide": wiring_guide
         }
 
 

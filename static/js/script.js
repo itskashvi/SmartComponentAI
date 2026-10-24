@@ -41,8 +41,9 @@ function fillPreset(description, platform, budget, existingParts) {
     if (partsInput) partsInput.value = existingParts;
 
     if (platSelect) {
+        // Match by option value (component_id)
         for (let i = 0; i < platSelect.options.length; i++) {
-            if (platSelect.options[i].text.includes(platform) || platSelect.options[i].value === platform) {
+            if (platSelect.options[i].value === platform) {
                 platSelect.selectedIndex = i;
                 break;
             }
@@ -234,6 +235,153 @@ function updateCompatibilityUI(report) {
 
         pairsContainer.innerHTML = html;
     }
+
+    // 5. Hardware Pinout & Wiring Table Update
+    if (report.wiring_guide) {
+        currentWiringGuide = report.wiring_guide;
+        
+        // Update MCU subtitle
+        const mcuSubtitle = document.getElementById("wiring-mcu-subtitle");
+        if (mcuSubtitle) {
+            mcuSubtitle.textContent = `Collision-free pin assignments, voltage rails, and signal routing for ${report.wiring_guide.mcu_name}.`;
+        }
+
+        // Update bus chips
+        const busesRow = document.getElementById("wiring-buses-row");
+        if (busesRow && report.wiring_guide.bus_summary) {
+            const bus = report.wiring_guide.bus_summary;
+            let busHtml = `
+                <div class="bus-chip">
+                    <strong>I2C Bus:</strong> SDA: ${escapeHtml(bus.i2c_bus.sda)} | SCL: ${escapeHtml(bus.i2c_bus.scl)}
+                    ${bus.i2c_bus.devices.length > 0 ? `<span>(Shared: ${escapeHtml(bus.i2c_bus.devices.join(", "))})</span>` : ''}
+                </div>
+            `;
+            if (bus.spi_bus && bus.spi_bus.devices.length > 0) {
+                busHtml += `
+                    <div class="bus-chip">
+                        <strong>SPI Bus:</strong> MOSI: ${escapeHtml(bus.spi_bus.mosi)} | SCK: ${escapeHtml(bus.spi_bus.sck)}
+                        <span>(Shared: ${escapeHtml(bus.spi_bus.devices.join(", "))})</span>
+                    </div>
+                `;
+            }
+            busesRow.innerHTML = busHtml;
+        }
+
+        // Update table body
+        const tableBody = document.getElementById("wiring-table-body");
+        if (tableBody && report.wiring_guide.wiring_table) {
+            let tableHtml = "";
+            report.wiring_guide.wiring_table.forEach(row => {
+                tableHtml += `
+                    <tr>
+                        <td class="comp-name-cell">${escapeHtml(row.component_name)}</td>
+                        <td><span class="pin-badge-peripheral">${escapeHtml(row.pin_label)}</span></td>
+                        <td><span class="pin-badge-mcu">${escapeHtml(row.mcu_pin)}</span></td>
+                        <td><span class="signal-type-tag">${escapeHtml(row.signal_type)}</span></td>
+                        <td>
+                            <span class="wire-color-tag">
+                                <span class="wire-dot" style="background-color: ${escapeHtml(row.wire_hex)};"></span>
+                                ${escapeHtml(row.wire_color)}
+                            </span>
+                        </td>
+                        <td class="wiring-notes-cell">${escapeHtml(row.circuit_notes)}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = tableHtml;
+        }
+
+        // Update advisories
+        const advisoryBox = document.getElementById("wiring-advisory-box");
+        const advisoryList = document.getElementById("wiring-advisory-list");
+        if (advisoryBox && advisoryList) {
+            if (report.wiring_guide.advisories && report.wiring_guide.advisories.length > 0) {
+                advisoryBox.style.display = "block";
+                advisoryList.innerHTML = report.wiring_guide.advisories.map(a => `<li>${escapeHtml(a)}</li>`).join("");
+            } else {
+                advisoryBox.style.display = "none";
+                advisoryList.innerHTML = "";
+            }
+        }
+    }
+}
+
+/**
+ * Copies the active wiring guide table to clipboard in Markdown format.
+ */
+async function copyWiringTable() {
+    const btn = document.getElementById("btn-copy-wiring");
+    const originalText = btn ? btn.textContent : "Copy Table (Markdown)";
+    
+    let textToCopy = "";
+    if (currentWiringGuide && currentWiringGuide.export_markdown) {
+        textToCopy = currentWiringGuide.export_markdown;
+    } else {
+        const rows = document.querySelectorAll("#wiring-table tbody tr");
+        textToCopy = "| Component | Pin Label | Target MCU Pin | Signal Type | Wire Color | Electrical Notes |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n";
+        rows.forEach(tr => {
+            const cells = Array.from(tr.querySelectorAll("td")).map(td => td.innerText.replace(/\n/g, " ").trim());
+            if (cells.length >= 6) {
+                textToCopy += `| ${cells[0]} | ${cells[1]} | ${cells[2]} | ${cells[3]} | ${cells[4]} | ${cells[5]} |\n`;
+            }
+        });
+    }
+
+    try {
+        await navigator.clipboard.writeText(textToCopy);
+        if (btn) {
+            btn.textContent = "Table Copied!";
+            btn.style.backgroundColor = "var(--color-sage-light)";
+            btn.style.borderColor = "var(--color-sage)";
+            btn.style.color = "var(--color-sage-dark)";
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.backgroundColor = "";
+                btn.style.borderColor = "";
+                btn.style.color = "";
+            }, 2000);
+        }
+    } catch (e) {
+        console.error("Clipboard copy failed:", e);
+    }
+}
+
+/**
+ * Downloads the active wiring guide as a formatted plain text file.
+ */
+async function downloadWiringGuide() {
+    const platformElem = document.getElementById("active-platform");
+    const platformId = platformElem ? (platformElem.dataset.platformId || "esp32") : "esp32";
+    
+    let content = "";
+    if (currentWiringGuide && currentWiringGuide.export_text) {
+        content = currentWiringGuide.export_text;
+    } else {
+        try {
+            const resp = await fetch("/export-wiring", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    platform_id: platformId,
+                    component_ids: activeSetupComponents
+                })
+            });
+            content = await resp.text();
+        } catch (e) {
+            console.error("Download fetch failed:", e);
+            return;
+        }
+    }
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wiring_guide_${platformId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function escapeHtml(text) {

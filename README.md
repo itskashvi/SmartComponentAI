@@ -55,6 +55,7 @@ SmartComponentAI solves these problems with a two-tier pipeline: a **content-bas
   - **Power Rail Budgeting**: Sums peak operating current draw and flags when an external 5V/2A power supply is needed instead of standard USB port power (500mA).
   - **Redundancy Warnings**: Detects when two components sharing the same functional role are manually added into a single setup.
 - **Actionable Circuit Solutions**: Instead of generic error messages, the engine prescribes exact engineering fixes (e.g., resistive voltage dividers with 1k-ohm and 2k-ohm resistors, bidirectional level shifters, or external MCP3008 ADC ICs).
+- **Automated Pinout & Wiring Guide Generator**: Dynamically maps pin-to-pin connections between the target microcontroller and all active peripheral modules. Identifies shared communication buses (I2C, SPI), allocates dedicated pins (ADC, PWM, GPIO, Chip Selects), recommends color-coded jumper wires, and provides one-click export (Markdown copy & .txt download).
 - **Clean Engineering UI**: Built with a bespoke 5-color palette, free of generic AI tropes and emojis, designed specifically as a professional electronics workbench.
 
 ---
@@ -211,7 +212,8 @@ SmartComponentAI/
 │   ├── recommendation.py       # TF-IDF + diversity ranking engine
 │   ├── recommendation_model.pkl# Serialized TF-IDF vectorizer & matrix
 │   ├── compatibility.py        # Hybrid Random Forest + engineering safety engine
-│   └── compatibility_model.pkl # Serialized Random Forest classifier
+│   ├── compatibility_model.pkl # Serialized Random Forest classifier
+│   └── wiring.py               # Automated pinout & collision-free wiring generator
 │
 ├── data/
 │   ├── raw/
@@ -346,7 +348,24 @@ On the results page:
 ### Interactive Setup Tuning
 
 - On any recommended component card, click **+ Add to Setup** or **In Setup** to toggle the part into or out of the active hardware circuit.
-- The web app sends an asynchronous `POST /check-compatibility` request and recomputes the pin usage, current draw, redundancy checks, and overall status without reloading the page.
+- The web app sends an asynchronous `POST /check-compatibility` request and recomputes the pin usage, current draw, redundancy checks, overall status, and updates the entire wiring table dynamically without reloading the page.
+
+---
+
+### Hardware Pinout & Wiring Guide
+
+Below the results columns, the **Hardware Pinout & Wiring Guide** card renders:
+- **Pin Interconnect Table**:
+  - Module Pin (e.g. `VCC`, `GND`, `SDA`, `SCL`, `Trig`, `Echo`).
+  - Target MCU Pin (e.g. `3V3`, `GND`, `GPIO 21`, `GPIO 22`, `GPIO 12`, `GPIO 13`).
+  - Signal Type classification (`Power (3.3V)`, `I2C Bus (SDA)`, `Digital Input (5V -> 3.3V)`, etc.).
+  - Recommended wire color with visual dot indicator (`Red`, `Black`, `Blue`, `Yellow`, `Green`).
+  - Practical circuit notes (voltage divider formulas, pull-up resistor requirements, external power isolation).
+- **Communication Bus Allocation**:
+  - Lists shared I2C bus lines (e.g., SDA: GPIO 21, SCL: GPIO 22) and lists all parallel devices sharing the bus.
+- **Export Capabilities**:
+  - **Copy Table (Markdown)**: Copies the complete Markdown-formatted table to the clipboard for direct inclusion in project documentation.
+  - **Download Guide (.txt)**: Downloads a clean, formatted ASCII text file (`wiring_guide_<platform>.txt`) for lab records and hardware assembly.
 
 ---
 
@@ -359,7 +378,7 @@ On the results page:
 
 ## Running Automated Tests
 
-A comprehensive integration test suite verifies the recommendation engine, compatibility evaluation, taxonomy filtering, and web routes:
+A comprehensive integration test suite verifies the recommendation engine, compatibility evaluation, taxonomy filtering, wiring table generation, and web routes:
 
 ```powershell
 python tests/test_pipeline.py
@@ -367,13 +386,15 @@ python tests/test_pipeline.py
 
 Expected output:
 ```text
-.............
+...............
 ----------------------------------------------------------------------
-Ran 13 tests in 0.542s
+Ran 15 tests in 1.240s
 
 OK
 [PASS] POST /check-compatibility returned JSON status: warning
 [PASS] GET /api/components returned 121 components.
+[PASS] POST /export-wiring returned downloadable plain text wiring specification.
+[PASS] Automated Pinout & Wiring Table generation verified successfully.
 [PASS] GET /component/bme280 returned 200 with datasheet specs.
 [PASS] ESP32 + BME280 compatibility evaluated as: compatible
 [PASS] ESP32 + HC-SR04 compatibility evaluated as: warning with level shifter solution

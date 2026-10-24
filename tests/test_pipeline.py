@@ -164,6 +164,38 @@ class TestSmartComponentAI(unittest.TestCase):
         self.assertGreaterEqual(len(data), 100)
         print(f"[PASS] GET /api/components returned {len(data)} components.")
 
+    def test_wiring_guide_generation(self):
+        from models.wiring import generate_wiring_guide
+        guide = generate_wiring_guide("esp32", ["bme280", "hc_sr04", "ssd1306_oled"])
+        self.assertIn("ESP32", guide["mcu_name"])
+        self.assertGreater(len(guide["wiring_table"]), 5)
+        
+        # Check I2C shared bus
+        i2c_rows = [r for r in guide["wiring_table"] if "I2C" in r["signal_type"]]
+        self.assertTrue(any("GPIO 21" in r["mcu_pin"] for r in i2c_rows))
+        self.assertTrue(any("GPIO 22" in r["mcu_pin"] for r in i2c_rows))
+        
+        # Check safety advisory for HC-SR04 Echo divider
+        self.assertTrue(any("Echo" in adv or "divider" in adv.lower() for adv in guide["advisories"]))
+        self.assertIn("SMARTCOMPONENTAI", guide["export_text"])
+        print("[PASS] Automated Pinout & Wiring Table generation verified successfully.")
+
+    def test_api_export_wiring_endpoint(self):
+        payload = {
+            "platform_id": "esp32",
+            "component_ids": ["bme280", "hc_sr04"]
+        }
+        response = self.client.post(
+            "/export-wiring",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "text/plain")
+        self.assertIn(b"SMARTCOMPONENTAI", response.data)
+        self.assertIn(b"HARDWARE WIRING SPECIFICATION", response.data)
+        print("[PASS] POST /export-wiring returned downloadable plain text wiring specification.")
+
 
 if __name__ == "__main__":
     unittest.main()

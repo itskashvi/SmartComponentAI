@@ -238,6 +238,86 @@
 
             </section>
         </div>
+
+        <!-- Hardware Pinout & Wiring Guide Section -->
+        <section class="wiring-guide-section" id="wiring-guide-card">
+            <div class="wiring-header">
+                <div class="wiring-title-group">
+                    <span class="preset-category-tag" style="margin-bottom: 6px; display: inline-block;">Circuit Interconnect Blueprint</span>
+                    <h2>Hardware Pinout & Wiring Guide</h2>
+                    <p class="wiring-subtitle" id="wiring-mcu-subtitle">
+                        Collision-free pin assignments, voltage rails, and signal routing for {{ compatibility_report.wiring_guide.mcu_name }}.
+                    </p>
+                </div>
+                <div class="wiring-actions">
+                    <button type="button" class="btn-wiring-action" onclick="copyWiringTable()" id="btn-copy-wiring">
+                        Copy Table (Markdown)
+                    </button>
+                    <button type="button" class="btn-wiring-action" onclick="downloadWiringGuide()" id="btn-download-wiring">
+                        Download Guide (.txt)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bus Allocation Chips -->
+            <div class="wiring-buses-row" id="wiring-buses-row">
+                <div class="bus-chip">
+                    <strong>I2C Bus:</strong> SDA: {{ compatibility_report.wiring_guide.bus_summary.i2c_bus.sda }} | SCL: {{ compatibility_report.wiring_guide.bus_summary.i2c_bus.scl }}
+                    {% if compatibility_report.wiring_guide.bus_summary.i2c_bus.devices %}
+                    <span>(Shared: {{ compatibility_report.wiring_guide.bus_summary.i2c_bus.devices|join(', ') }})</span>
+                    {% endif %}
+                </div>
+                {% if compatibility_report.wiring_guide.bus_summary.spi_bus.devices %}
+                <div class="bus-chip">
+                    <strong>SPI Bus:</strong> MOSI: {{ compatibility_report.wiring_guide.bus_summary.spi_bus.mosi }} | SCK: {{ compatibility_report.wiring_guide.bus_summary.spi_bus.sck }}
+                    <span>(Shared: {{ compatibility_report.wiring_guide.bus_summary.spi_bus.devices|join(', ') }})</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Wiring Table -->
+            <div class="wiring-table-wrapper">
+                <table class="wiring-table" id="wiring-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Module Pin</th>
+                            <th>Target MCU Pin</th>
+                            <th>Signal Type</th>
+                            <th>Wire Color</th>
+                            <th>Circuit & Interfacing Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wiring-table-body">
+                        {% for row in compatibility_report.wiring_guide.wiring_table %}
+                        <tr>
+                            <td class="comp-name-cell">{{ row.component_name }}</td>
+                            <td><span class="pin-badge-peripheral">{{ row.pin_label }}</span></td>
+                            <td><span class="pin-badge-mcu">{{ row.mcu_pin }}</span></td>
+                            <td><span class="signal-type-tag">{{ row.signal_type }}</span></td>
+                            <td>
+                                <span class="wire-color-tag">
+                                    <span class="wire-dot" style="background-color: {{ row.wire_hex }};"></span>
+                                    {{ row.wire_color }}
+                                </span>
+                            </td>
+                            <td class="wiring-notes-cell">{{ row.circuit_notes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Circuit Implementation Advisories -->
+            <div class="wiring-advisory-box" id="wiring-advisory-box" {% if not compatibility_report.wiring_guide.advisories %}style="display:none;"{% endif %}>
+                <h4 class="wiring-advisory-heading">Circuit Implementation Advisories & Safety Checklist:</h4>
+                <ul class="wiring-advisory-list" id="wiring-advisory-list">
+                    {% for adv in compatibility_report.wiring_guide.advisories %}
+                    <li>{{ adv }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
     </main>
 
     <footer class="footer">
